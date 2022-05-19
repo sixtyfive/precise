@@ -161,7 +161,8 @@ module Precise
       },
       precise: {
         á:    :ى,
-        Ā:    :آ # don't add 'ʾĀ' here - it is considered an error in the input!
+        Ā:    :آ, # don't add 'ʾĀ' here - it is considered an error in the input!
+        'ʾā': :آ # same but lowercase - alif madda in the middle of the word
       }
     }
 
@@ -206,7 +207,8 @@ module Precise
     def initialize(opts = {})
       default_options = {alif_variants: true, tashkeel: true, punctuation: true, verbosity: 0}
       @opts = default_options.merge(opts)
-      $dbg ||= @opts[:verbosity]
+      @opts[:verbosity] += 2 if @opts.delete(:verbose) == true
+      $dbg += @opts[:verbosity]
 
       @fatha, @kasra, @damma, @shadda = [Fatha, Kasra, Damma, Shadda]
       @r2lm, @l2rm, @zwnj = [R2LM, L2RM, ZWNJ]
@@ -275,9 +277,9 @@ module Precise
       # s = any short vowel
       # l = any long vowel
       patterns = [
-        'icclc',
-        'iccicclc',
-        'iclcc'
+        'iCClC',
+        'iCCiCClC',
+        'iClCC'
       ]
       # pp word
       shorts = RomanizedShortVowels
@@ -290,7 +292,7 @@ module Precise
         match = true
         word.chars.each_with_index do |c,i|
           case p[i]
-            when 'c' then match = false unless consonants.include?(c)
+            when 'C' then match = false unless consonants.include?(c)
             when 's' then match = false unless shorts.include?(c)
             when 'l' then match = false unless longs.include?(c)
           else
@@ -298,20 +300,10 @@ module Precise
           end
           # puts "after #{c}: #{match} (should have been #{p[i]})"
         end
+        (match = false if word.downcase.match?(/^ist/)) # استـ introduces 
         (alif = AlifHamzaBelow; break) if match
       end; puts "\t\tfor #{word}: word-initial #{alif}".light_blue if $dbg > 1
       alif
-    end
-
-    def word_initial_alif_from_short_vowel(ch, word)
-      case ch
-        when 'a' then AlifHamzaAbove # likely to be with hamza
-        when 'i' then
-          # likely to be without hamza, but let's try to make a more informed choice
-          word = word.split(/^w?al-/).last
-          alif_for_word_initial_kasra(word)
-        when 'u' then AlifHamzaAbove # likely to be with hamza
-      end
     end
 
     def sanitize(str)
@@ -349,13 +341,13 @@ module Precise
       arabic = arabic.chars
       # to be able to merge 2 romanized characters into 1 arabic character
       skip = false
-      # ʿ·A·b·b·ā·d·ī· ·M·u·ḥ·a·m·m·a·d· ·I·b·n· ·A·ḥ·m·a·d· ·I·b·n· ...
+      # print string like so: ʿ·A·b·b·ā·d·ī· ·M·u·ḥ·a·m·m·a·d· ·I·b·n· ·A·ḥ·m·a·d· ·I·b·n· ...
       puts "- (#{romanized.size}) [#{romanized.join('·')}]".light_green if $dbg > 1
 
       # loop over the romanized character array, filling the arabic one up as we go
       romanized.each_with_index do |ch,i|
         # a little bit of context
-         pch = romanized[i-1]
+         pch = i == 0 ? nil : romanized[i-1]
          fch = romanized[i+1]
         ffch = romanized[i+2]
 
@@ -369,15 +361,17 @@ module Precise
         (dbg "\tskipping unprintable symbol"; next) if [@zwnj].include?(ch)
 
         # deal with alif madda before "normal" hamza rules follow
-        (dbg "\talif madda #{L2A['ʾĀ']}"; arabic << L2A['ʾĀ']; skip=true; next) if ("#{ch}#{fch}" == 'ʾĀ')
+        if ("#{ch}#{fch}".match?(/ʾā/) || "#{pch}#{ch}".match?(/^Ā/))
+          (dbg "\talif madda #{L2A['ʾā']}"; arabic << L2A['ʾā']; skip=true; next); end
 
         # hamza is unlikely to be stand-alone if followed by a short or long vowel
-        if ch == 'ʾ' && fch && %w[a i u ā ī ū].include?(fch.downcase)
+        if ch == 'ʾ' && %w[a i u ā ī ū].include?(fch.to_s.downcase)
           is_first_letter_of_word = (pch.nil? || pch.match(/\s+/))
           (dbg "\t#{ch} as carrier for following #{fch}";
            arabic << hamza_carrier_for_following(fch, is_first_letter_of_word); skip=true; next); end
         # hamza is unlikely to be stand-alone if preceded by a short vowel
-        if fch && fch == 'ʾ' && %w[a i u].include?(ch.downcase)
+        # but beware of a possible alif madda (will be dealt with above, on the next round, if it's the case)
+        if fch.to_s == 'ʾ' && !ffch.to_s.match?(/[āĀ]/) && %w[a i u].include?(ch.downcase)
           is_first_letter_of_word = (pch.nil? || pch.match(/\s+/))
           (dbg "\t#{ch} as carrier for preceding #{fch}"
            arabic << hamza_carrier_for_preceding(ch, is_first_letter_of_word); skip=true; next); end
@@ -385,15 +379,21 @@ module Precise
         # find the article "al", marked by having a dash appended to it
         (dbg "\tarticle al- #{L2A['al-']}"; arabic << L2A['al-']; skip=true; next) if ("#{ch}#{fch}#{ffch}" == 'al-')
 
-        # unconditionally add spaces, dots and dashes
+        # unconditionally add spaces, dots and dashes to the output
         (dbg "\tinitial only (#{pch}#{ch})"; arabic << ch; next) if ch=='.' && (fch.nil? || fch.match(/\s+/))
         (dbg "\tnon-letter (#{ch})"; arabic << ch; next) if ch.match(PunctSepRgx) # white space or punctuation
 
-        # vowel at word-start is never just a diacritic, but it's unclear as to whether there's a hamza anyhwere
-        if (pch.nil? || pch.match?(/[\s\-]/)) && %w[a i u].include?(ch)
-          (dbg "\thamza-less alif?"
-           context = this_word(romanized.join, i)
-           arabic << word_initial_alif_from_short_vowel(ch, context); next); end
+        # a word-initial "a" or "u" must always be preceded by "ʾ"; only "i" can possibly *not* have one
+
+        # deal with word-initial special cases
+        if pch.to_s.strip.empty? # either beginning of string or of word
+          if %w[a u].include?(ch)  
+            (dbg "\tprepending #{ch} with hamza"; arabic << L2A[ch.upcase]; next); end
+          if ch == 'i'
+            (dbg "\thamza-less alif?"
+             context = this_word(romanized.join, i)
+             arabic << alif_for_word_initial_kasra(context.split(/^w?al-/).last)
+             next); end; end
 
         # perform tashdeed
         (dbg "\ttashdeed of #{ch} #{L2A[ch]+@shadda}"; arabic << L2A[ch]+@shadda; skip = true; next) if L2A[ch] && ch==fch
@@ -425,7 +425,7 @@ module Precise
           (dbg "\tcontextual #{ch} #{choice}"; arabic << choice; next); end
 
         # exact match (pure transliteration, no transcription effort required)
-        (dbg "\tfrom table #{ch} #{L2A[ch]}"; arabic << L2A[ch]; next) if L2A[ch]
+        (dbg "\tfrom table #{ch}→#{L2A[ch]}"; arabic << L2A[ch]; next) if L2A[ch]
 
         # no luck yet; might be a regular uppercase letter
         (dbg "\tuppercased #{ch} #{L2A[ch.downcase]}"; arabic << L2A[ch.downcase]; next) if L2A[ch.downcase]
