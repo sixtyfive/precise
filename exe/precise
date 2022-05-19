@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+
+f = File.basename(__FILE__, '.rb')
+if __FILE__.match(/exe\/#{f}$/) 
+  require_relative "../lib/#{f}"
+else
+  require f
+end
+
+Precise::CLI.start
