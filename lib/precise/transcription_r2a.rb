@@ -106,6 +106,7 @@ module Precise
       },
       vowels: {
         a:     Fatha,
+        à:     Fatha, # at word-end only
         u:     Damma,
         i:     Kasra,
       },
