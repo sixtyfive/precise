@@ -41,8 +41,8 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  precise!
   minitest (~> 5.0)
+  precise!
   rake (~> 13.0)
   standard (~> 1.3)
 
