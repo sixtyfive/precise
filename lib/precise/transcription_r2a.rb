@@ -106,6 +106,7 @@ module Precise
       },
       vowels: {
         a:     Fatha,
+        à:     Fatha, # at word-end only
         u:     Damma,
         i:     Kasra,
       },
@@ -198,7 +199,8 @@ module Precise
     SunLetters = %w[t ṯ d ḏ r z s š ṣ ḍ ṭ ẓ l n]
     RomanizedShortVowels = %w[a i u]
     RomanizedLongVowels = %w[ā ū ī]
-    RomanizedConsonantals = SunLetters + %w[m l k q f ġ ʿ ḫ ḥ h ǧ b ʾ a á] # "a" here because of ta'marbouta, "á" because of alif maqsoura, "ā" because of word-final alif mamdouda
+    # "a" here because of ta'marbouta, "á" because of alif maqsoura, "ā" because of word-final alif mamdouda
+    RomanizedConsonantals = SunLetters + %w[m l k q f ġ ʿ ḫ ḥ h ǧ b ʾ a á]
     ArabicScriptVowels = %w[ا ي و]
     ArabicScriptConsonants = %w[ا ب ت ث ج ح خ س ش ص ض ط ظ ع غ ف ق ك ل م ن ه ي ئ ة ى أ إ ؤ ئ آ]
       
@@ -236,7 +238,7 @@ module Precise
       str[0...idx][/\S*\z/] + (str[idx..-1][/\A[#{@translit_chars}\w]+\s+[#{@translit_chars}\w]+/i] || '')
     end
 
-    def hamza_carrier_for_following(ch, first_letter_of_word = false)
+    def hamza_before_following(ch, pch, first_letter_of_word = false)
       if first_letter_of_word
         case ch.to_sym
           when :a, :u then @alif_hamzaabove
@@ -246,21 +248,33 @@ module Precise
           when :ū then "#{@waw_hamzaabove}#{L2A[ch]}"
         end
       else
-        case ch.to_sym
-          when :a then @alif_hamzaabove
-          when :i then @ya_hamzaabove
-          when :u then @waw_hamzaabove
-          when :ī then "#{@ya_hamzaabove}#{L2A[ch]}"
-          when :ū then "#{@waw_hamzaabove}#{L2A[ch]}"
+        if pch == 'y'
+          case ch.to_sym
+            when :a then @ya_hamzaabove
+            when :i then @ya_hamzaabove
+            when :u then @waw_hamzaabove
+            when :ī then "#{@ya_hamzaabove}#{L2A[ch]}"
+            when :ū then "#{@waw_hamzaabove}#{L2A[ch]}"
+          end
+        else
+          case ch.to_sym
+            when :a then @alif_hamzaabove
+            when :i then @ya_hamzaabove
+            when :u then
+              pch == 'ū' ? L2A['ʾ'] : @waw_hamzaabove
+            when :ī then "#{@ya_hamzaabove}#{L2A[ch]}"
+            when :ū then "#{@waw_hamzaabove}#{L2A[ch]}"
+          end
         end
       end
     end
 
-    def hamza_carrier_for_preceding(ch, first_letter_of_word = false)
+    def hamza_after_preceding(ch, first_letter_of_word = false)
       if first_letter_of_word
         case ch.to_sym
-          when :a, :u then @alif_hamzaabove
-          when :i then @alif_hamzabelow
+          when :a then @alif_hamzaabove
+          when :u then L2A['ā']+@damma+@waw_hamzaabove
+          when :i then L2A['ā']+@ya_hamzaabove
         end
       else
         case ch.to_sym
@@ -364,17 +378,18 @@ module Precise
         if ("#{ch}#{fch}".match?(/ʾā/) || "#{pch}#{ch}".match?(/^Ā/))
           (dbg "\talif madda #{L2A['ʾā']}"; arabic << L2A['ʾā']; skip=true; next); end
 
-        # hamza is unlikely to be stand-alone if followed by a short or long vowel
+        # hamza followed by a short or long vowel
         if ch == 'ʾ' && %w[a i u ā ī ū].include?(fch.to_s.downcase)
           is_first_letter_of_word = (pch.nil? || pch.match(/\s+/))
-          (dbg "\t#{ch} as carrier for following #{fch}";
-           arabic << hamza_carrier_for_following(fch, is_first_letter_of_word); skip=true; next); end
-        # hamza is unlikely to be stand-alone if preceded by a short vowel
-        # but beware of a possible alif madda (will be dealt with above, on the next round, if it's the case)
+          (dbg "\t#{ch} with following #{fch}";
+           arabic << hamza_before_following(fch, pch, is_first_letter_of_word);
+           skip=true unless (!ffch && fch=='a'); next); end
+        # hamza preceded by a short vowel
+        # (beware of a possible alif madda (would be dealt with above, on the next round))
         if fch.to_s == 'ʾ' && !ffch.to_s.match?(/[āĀ]/) && %w[a i u].include?(ch.downcase)
           is_first_letter_of_word = (pch.nil? || pch.match(/\s+/))
-          (dbg "\t#{ch} as carrier for preceding #{fch}"
-           arabic << hamza_carrier_for_preceding(ch, is_first_letter_of_word); skip=true; next); end
+          (dbg "\t#{fch} carried on or following preceding #{ch}"
+           arabic << hamza_after_preceding(ch, is_first_letter_of_word); skip=true; next); end
 
         # find the article "al", marked by having a dash appended to it
         (dbg "\tarticle al- #{L2A['al-']}"; arabic << L2A['al-']; skip=true; next) if ("#{ch}#{fch}#{ffch}" == 'al-')
@@ -446,7 +461,7 @@ module Precise
 
       # dragnet replacement of special words, such as changing "ibn" into "bin"
       2.times.each_with_index do |i|
-        puts "#{' '*6}(round #{i+1})".light_green if $dbg > 1
+        puts "#{' '*6}(postprocessing round #{i+1})".light_green if $dbg > 1
         PostL2AWordReplacements.each{|rgx,subst|
           arabic.map!{|w|
             puts "#{' '*8}word match: #{@l2rm}#{rgx.inspect} #{@l2rm}=> #{@l2rm}'#{subst}'".green if (w.match(rgx) && $dbg > 1)
