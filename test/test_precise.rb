@@ -30,14 +30,14 @@ class Precise::TestPrecise < Minitest::Test
     'luʾluʾ': 'لُؤْلُؤ', # perle
     'mutalaʾliʾ': 'مُتَلَأْلِئ', # to shine like a pearl (a person's eyes)
     'takaʾkaʾtum': 'تَكَأْكَأْتُم', # ihr wart feige ("ihr feigtet")
-    # 'iʾtamarà': 'اِئْتَمَر', # er hat den befehl ausgeführt
-    # 'uʾmaru': 'ُاُؤْمَر', # ich bekomme einen befehl
-    # 'hayʾa': 'هَيْئَة',
+    'iʾtamarà': 'اِئْتَمَر', # er hat den befehl ausgeführt
+    'uʾmaru': 'اُؤْمَرُ', # ich bekomme einen befehl
+    'hayʾa': 'هَيْئَة',
     'tahayyuʾ': 'تَهَيُّؤ', # bereit sein, etwas zu machen; sich etwas vorstellen
     'musīʾ': 'مُسِيء',
-    # 'bīʾa': 'بِيئَة',
+    'bīʾa': 'بِيئَة',
     'fayʾ': 'فَيْء',
-    # 'wuḍūʾukà': 'وُضُوءُكَ',
+    'wuḍūʾukà': 'وُضُوءُكَ',
     'wuḍūʾī': 'وُضُوئِي',
     # 'samawʾal': 'سَمَوْءَل',
     'ḍawʾī': 'ضَوْئِي',
@@ -45,7 +45,8 @@ class Precise::TestPrecise < Minitest::Test
     'masāʾunā': 'مَسَاؤُنَا',
     'masāʾinā': 'مَسَائِنَا',
     'wuḍūʾ': 'وُضُوء',
-    'masāʾ': 'مَسَاء'
+    'masāʾ': 'مَسَاء',
+    'mufāǧaʾa': 'مُفَاجَأَة'
   }
 
   def test_lowercase_single_word_strings
