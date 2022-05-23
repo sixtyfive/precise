@@ -2,7 +2,7 @@ require 'colorize'
 require 'pp'
 require 'slop'
 
-%w[version core_extensions transcription_r2a].each{|d| require_relative File.join(__dir__,'..','lib','precise',d)}
+%w[version debugging error_classes core_extensions transcription_r2a].each{|d| require_relative File.join(__dir__,'..','lib','precise',d)}
 
 module Precise
   class Error < StandardError; end
