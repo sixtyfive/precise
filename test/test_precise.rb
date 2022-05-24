@@ -46,7 +46,8 @@ class Precise::TestPrecise < Minitest::Test
     'masāʾinā': 'مَسَائِنَا',
     'wuḍūʾ': 'وُضُوء',
     'masāʾ': 'مَسَاء',
-    'mufāǧaʾa': 'مُفَاجَأَة'
+    'mufāǧaʾa': 'مُفَاجَأَة',
+    'ḫabīʾat': 'خَبِيئَة'
   }
 
   def test_lowercase_single_word_strings
