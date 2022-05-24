@@ -10,7 +10,7 @@ module Precise
   end
 
   class NotATranscriptionError < StandardError
-    def initialize(msg="input string is not a romanisation of Arabic", exception_type=:untranscribable)
+    def initialize(msg="input string is not (entirely) a romanisation of Arabic", exception_type=:untranscribable)
       @exception_type = exception_type
       super(msg)
     end
