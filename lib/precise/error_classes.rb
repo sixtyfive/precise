@@ -1,4 +1,6 @@
-module ErrorClasses  
+module Precise
+  class Error < StandardError; end
+
   class TranscriptionError < StandardError
     def initialize(msg="unable to transcribe input string", exception_type=:untranscribable)
       @exception_type = exception_type

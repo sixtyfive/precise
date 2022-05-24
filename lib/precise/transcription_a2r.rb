@@ -1,7 +1,6 @@
 module Precise
 
   using CoreExtensions # the more generic ones
-  using ErrorClasses
 
   class Transcription
     def initialize(opts = {})
@@ -12,7 +11,7 @@ module Precise
     end
 
     def transcribe(arabic)
-      # TODO: implement
+      "sorry, transcription of Arabic into Latin characters is not implemented yet"
     end
 
     def self.transcribe(arabic, opts={})

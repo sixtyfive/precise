@@ -2,11 +2,10 @@ require 'colorize'
 require 'pp'
 require 'slop'
 
-%w[version debugging error_classes core_extensions transcription_r2a].each{|d| require_relative File.join(__dir__,'..','lib','precise',d)}
+deps = %w[version debugging error_classes core_extensions transcription_r2a transcription_a2r]
+deps.each{|d| require_relative File.join(__dir__,'..','lib','precise',d)}
 
 module Precise
-  class Error < StandardError; end
-
   class CLI
     def initialize
       opts = Slop::Options.new
@@ -39,7 +38,12 @@ module Precise
       options[:punctuation] = false if @opts.to_h[:no_punctuation]
 
       @opts.arguments.each do |arg|
-        puts Precise::Transcription.reverse(arg.dup, options).pretty_inspect.gsub(/(^"|"$)/, "").strip
+        if arg.match? /\p{Arabic}/
+          outstr = Precise::Transcription.transcribe(arg.dup, options)
+        else
+          outstr = Precise::Transcription.reverse(arg.dup, options)
+        end
+        puts outstr.pretty_inspect.gsub(/(^"|"$)/, "").strip
       end
     end
 

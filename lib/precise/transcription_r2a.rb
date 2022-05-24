@@ -1,7 +1,6 @@
 module Precise
 
   using CoreExtensions # the more generic ones
-  using ErrorClasses
 
   module CoreExtensions # the ones specific to this module
     refine String do
