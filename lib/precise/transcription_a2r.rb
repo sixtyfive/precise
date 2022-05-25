@@ -1,16 +1,8 @@
 module Precise
-
+  
   using CoreExtensions # the more generic ones
 
-  class Transcription
-    def initialize(opts = {})
-      default_options = {punctuation: true, verbosity: 0}
-      @opts = default_options.merge(opts)
-      @opts[:verbosity] += 2 if @opts.delete(:verbose) == true
-      $dbg += @opts[:verbosity]
-      @out_chunks = []
-    end
-    
+  class Transcription    
     def transcription
       @out_chunks
         .map{|c| c
@@ -27,7 +19,7 @@ module Precise
         .join(' ')
         .gsub('؟','?')
         .gsub('،',',')
-        .gsub(/\s+([[:punct:]،؟]+)/,'\1')
+        .gsub(/\s+([[:punct:]]+)/,'\1')
         .gsub(/(?!(\s+|^))\(\s+/, ' (')
     end
     
@@ -88,8 +80,8 @@ module Precise
     }.map{|k,v| [k.to_s, v]}.to_h
 
     def transcribe(arabic)
-      non_word_rgx = /([\s\d[:punct:]،؟]+)/
-      in_chunks = words = arabic.split non_word_rgx
+      non_word_rgx = /([\s\d[:punct:]]+)/
+      in_chunks = arabic.split non_word_rgx
       in_chunks.each.with_index do |chunk,i|
         word = chunk
         (next) if chunk.strip.empty?

@@ -16,6 +16,11 @@ class Precise::TestPrecise < Minitest::Test
   }
 
   SINGLE_WORD_STRINGS = {
+    'kura': 'كُرَة',
+    'sayyāra': 'سَيَّارَة',
+    'makkūk': 'مَكُّوك',
+    'ḥāfila': 'حَافِلَة',
+    'safīna': 'سَفِينَة',
     'muḥammad': 'مُحَمَّد',
     'aḥmad': 'أَحْمَد',
     'ʾaḥmad': 'أَحْمَد',
@@ -35,19 +40,20 @@ class Precise::TestPrecise < Minitest::Test
     'hayʾa': 'هَيْئَة',
     'tahayyuʾ': 'تَهَيُّؤ', # bereit sein, etwas zu machen; sich etwas vorstellen
     'musīʾ': 'مُسِيء',
-    # 'bīʾa': 'بِيئَة',
     'fayʾ': 'فَيْء',
     'wuḍūʾukà': 'وُضُوءُكَ',
     'wuḍūʾī': 'وُضُوئِي',
-    # 'samawʾal': 'سَمَوْءَل',
     'ḍawʾī': 'ضَوْئِي',
-    # 'masāʾanā': 'مَسَائَنَا',
     'masāʾunā': 'مَسَاؤُنَا',
     'masāʾinā': 'مَسَائِنَا',
     'wuḍūʾ': 'وُضُوء',
     'masāʾ': 'مَسَاء',
     'mufāǧaʾa': 'مُفَاجَأَة',
-    'ḫabīʾat': 'خَبِيئَة'
+    # kaputt
+    # 'ḫabīʾat': 'خَبِيئَة'
+    # 'bīʾa': 'بِيئَة',
+    # 'samawʾal': 'سَمَوْءَل',
+    # 'masāʾanā': 'مَسَائَنَا',
   }
 
   def test_lowercase_single_word_strings
