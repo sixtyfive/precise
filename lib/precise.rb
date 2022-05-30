@@ -18,7 +18,7 @@ module Precise
       opts.bool "-v", "--verbose", "instruct the backend classes to output debugging and plausibility information"
       opts.bool "-h", "--help", "display this message"
       opts.separator "\n    Transcription direction is determined by presence of characters from the 'Arabic' Unicode block.\n" \
-        "    At present, only retro-transcription (that is, from Roman to Arabic script) is implemented."
+        "    At present, Arabic-to-Roman transcription is only rudimentary."
       opts = Slop::Parser.new(opts)
 
       # TODO: add option to print the rules!
@@ -37,14 +37,13 @@ module Precise
       options[:tashkeel] = false if @opts.to_h[:no_tashkeel]
       options[:punctuation] = false if @opts.to_h[:no_punctuation]
 
-      @opts.arguments.each do |arg|
-        if arg.match?(/\p{Arabic}/)
-          outstr = Precise::Transcription.transcribe(arg.dup, options)
-        else
-          outstr = Precise::Transcription.reverse(arg.dup, options)
-        end
-        puts outstr.pretty_inspect.gsub(/(^"|"$)/, "").strip
+      instr = @opts.arguments.join(' ')
+      if instr.match?(/\p{Arabic}/)
+        outstr = Precise::Transcription.transcribe(instr.dup, options)
+      else
+        outstr = Precise::Transcription.reverse(instr.dup, options)
       end
+      puts outstr.pretty_inspect.gsub(/(^"|"$)/, "").strip
     end
 
     def usage

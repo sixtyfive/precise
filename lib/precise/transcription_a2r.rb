@@ -112,7 +112,7 @@ module Precise
 
     def self.transcribe(arabic, opts={})
       warn "Warning: Romanisation is experimental and incomplete!".yellow
-      warn "         Consider adding short vowels by hand as needed.".yellow
+      warn "Especially consider adding short vowels by hand as needed.".yellow
       obj = new(opts)
       obj.transcribe(arabic)
       return obj.transcription
