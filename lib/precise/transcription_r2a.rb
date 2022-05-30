@@ -186,11 +186,11 @@ module Precise
     ArabicScriptConsonants = %w[ا ب ت ث ج ح خ س ش ص ض ط ظ ع غ ف ق ك ل م ن ه ي ئ ة ى أ إ ؤ ئ آ]
       
     LatinChars = R2A.map{|l,a| l unless l.size != 1}.compact
-    TranslitChars_lowercase = 'ḏʾḥṣḍṭẓʿāūīṯǧčḫžšġōĖēáäüöü'
+    TranslitChars_lowercase = 'ʾʿḏḥṣḍṭẓāūīṯǧčḫžšġōĖēáäüöü'
     TranslitChars = (TranslitChars_lowercase + TranslitChars_lowercase.upcase).chars.uniq.join
 
     def this_word(str, idx)
-      str[idx..-1][/\A[#{@translit_chars}\w]+/]
+      str[0...idx][/\S*\z/] + (str[idx..-1][/\A[#{TranslitChars}\w]+/] || '')
     end
 
     def this_word_and_the_next(str, idx)
@@ -198,7 +198,11 @@ module Precise
       # second part: from index position to end of string,
       #              get all characters belonging to the word which the index position character belongs to,
       #              as well as the next word if any
-      str[0...idx][/\S*\z/] + (str[idx..-1][/\A[#{@translit_chars}\w]+\s+[#{@translit_chars}\w]+/i] || '')
+      if str.match?(/\s+/)
+        str[0...idx][/\S*\z/] + (str[idx..-1][/\A[#{@translit_chars}\w]+\s+[#{@translit_chars}\w]+/i] || '')
+      else
+        str
+      end
     end
 
     def hamza_before_following(ch, pch, first_letter_of_word = false)
@@ -211,7 +215,8 @@ module Precise
           when :ū then "#{WawHamzaAbove}#{R2A[ch]}"
         end
       else
-        if pch == 'y'
+        if %w[y ī].include? pch
+          # also take into account what PRECEDED the hamza - that might take precedence!
           case ch.to_sym
             when :a then YaHamzaAbove
             when :i then YaHamzaAbove
@@ -244,6 +249,7 @@ module Precise
           when :a then AlifHamzaAbove
           when :i then YaHamzaAbove
           when :u then WawHamzaAbove
+          when :ī then YaHamzaAbove
         end
       end
     end
@@ -346,7 +352,8 @@ module Precise
           is_first_letter_of_word = (pch.nil? || pch.match(/\s+/))
           (dbg "\t#{ch} with following #{fch}";
            arabic << hamza_before_following(fch, pch, is_first_letter_of_word);
-           skip=true unless (!ffch && fch=='a'); next); end
+           skip=true unless this_word(romanized.join, i).match?(/(a$|at($|\s))/)
+           next); end
         # hamza preceded by a short vowel
         # (beware of a possible alif madda (would be dealt with above, on the next round))
         if fch.to_s == 'ʾ' && !ffch.to_s.match?(/[āĀ]/) && %w[a i u].include?(ch.downcase)
@@ -377,13 +384,18 @@ module Precise
         (out=R2A[ch]+Shadda; dbg "\ttashdeed of #{ch} #{out}"; arabic << out; skip = true; next) if R2A[ch] && ch==fch
 
         # should there be a ta'marbouta or not at the end of the word?
-        if ("#{ch}#{fch}#{ffch}" == 'at ' || (ch=='a' && (fch.nil? || fch.match?(/\s/))))
-          context = this_word_and_the_next(romanized.join, i) # a little more context
-          if context.match?(/\s+/) # current letter belongs to the last word of the string
-            (dbg "\t\"…#{context}…\" => #{R2A['-at']}"; arabic << R2A['-at']+' '; skip=true; wait_for_key if ($dbg > 4); next) if ch=='a' && fch.match?(/(t|\s)/)
-          else # current letter does not belong to the last word of the string
-            # despite what's claimed by the table in brockelmann's intro, this might be a bit of a gamble 
-            (dbg "\t\"…#{context+ch}\" => #{R2A['-a']}"; arabic << R2A['-a']; wait_for_key if ($dbg > 4); next) if ch=='a' && fch.nil? 
+        context1 = this_word(romanized.join,i)
+        context2 = this_word_and_the_next(romanized.join,i)
+        if context1 == context2 # single word
+          if (i == context1.length-2 && "#{ch}#{fch}".match?(/at$/)) \
+             || (i == context1.length-1 && "#{ch}#{fch}".match?(/a$/))
+             arabic << R2A['-at']+' '; skip=true; next
+          end
+        else # multiple words
+          if (i == context1.length-2 && "#{ch}#{fch}#{ffch}".match?(/at\s/))
+            arabic << R2A['-a']+' '; skip = true; next
+          elsif (i == context1.length-1 && "#{ch}#{fch}".match?(/a\s/))
+            arabic << R2A['-a']+' '; next
           end
         end
 

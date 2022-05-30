@@ -49,11 +49,15 @@ class Precise::TestPrecise < Minitest::Test
     'wuḍūʾ': 'وُضُوء',
     'masāʾ': 'مَسَاء',
     'mufāǧaʾa': 'مُفَاجَأَة',
-    # kaputt
-    # 'ḫabīʾat': 'خَبِيئَة'
-    # 'bīʾa': 'بِيئَة',
+    'ḫabīʾat': 'خَبِيئَة',
+    'ḫabīʾat al-ʾanbiāʾ': 'خَبِيئَة الأَنْبِاء',
+    'ḫabīʾa al-ʾanbiāʾ': 'خَبِيئَة الأَنْبِاء',
+    'bīʾa': 'بِيئَة',
+    # TODO:
+    # getting these right would involve knowing with some good certainty what
+    # their root letters are, so it's something better left for another time...
     # 'samawʾal': 'سَمَوْءَل',
-    # 'masāʾanā': 'مَسَائَنَا',
+    # 'masāʾanā': 'مَسَاءَنَا',
   }
 
   def test_lowercase_single_word_strings
