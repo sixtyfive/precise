@@ -9,6 +9,7 @@ Refactor to follow the following pattern:
 def arabic_roots(opts); ['ʿwl','msʾ'].reject{|r| !r.include? opts[:with_letter]}.compact; end # 
 
 # 2005: http://jeffcoombs.com/isri/Taghva2005b.pdf
+# 2006: NN-based: https://ieeexplore.ieee.org/document/4115547
 # 2007: https://ieeexplore.ieee.org/document/4230974/
 # 2014: https://journals.sagepub.com/doi/abs/10.1177/0165551514526348?journalCode=jisb
 # 2016: https://www.sciencedirect.com/science/article/pii/S1319157815001342
