@@ -2,11 +2,10 @@ require 'colorize'
 require 'pp'
 require 'slop'
 
-%w[version core_extensions transcription_r2a].each{|d| require_relative File.join(__dir__,'..','lib','precise',d)}
+deps = %w[version debugging error_classes core_extensions transcription transcription_r2a transcription_a2r]
+deps.each{|d| require_relative File.join(__dir__,'..','lib','precise',d)}
 
 module Precise
-  class Error < StandardError; end
-
   class CLI
     def initialize
       opts = Slop::Options.new
@@ -19,7 +18,7 @@ module Precise
       opts.bool "-v", "--verbose", "instruct the backend classes to output debugging and plausibility information"
       opts.bool "-h", "--help", "display this message"
       opts.separator "\n    Transcription direction is determined by presence of characters from the 'Arabic' Unicode block.\n" \
-        "    At present, only retro-transcription (that is, from Roman to Arabic script) is implemented."
+        "    At present, Arabic-to-Roman transcription is only rudimentary."
       opts = Slop::Parser.new(opts)
 
       # TODO: add option to print the rules!
@@ -38,9 +37,13 @@ module Precise
       options[:tashkeel] = false if @opts.to_h[:no_tashkeel]
       options[:punctuation] = false if @opts.to_h[:no_punctuation]
 
-      @opts.arguments.each do |arg|
-        puts Precise::Transcription.reverse(arg.dup, options).pretty_inspect.gsub(/(^"|"$)/, "").strip
+      instr = @opts.arguments.join(' ')
+      if instr.match?(/\p{Arabic}/)
+        outstr = Precise::Transcription.transcribe(instr.dup, options)
+      else
+        outstr = Precise::Transcription.reverse(instr.dup, options)
       end
+      puts outstr.pretty_inspect.gsub(/(^"|"$)/, "").strip
     end
 
     def usage

@@ -1,4 +1,15 @@
 module CoreExtensions
+  refine String do
+    def precise_titlecase
+      s = chars
+      s.map.with_index{|c,i|
+        !%w[a i u].include?(s[0]) && ((i==0 && self[0..1] != 'al') || (i==1 && %w[ʾ ʿ].include?(s[0]))) ? 
+          c.upcase :
+          c
+      }.join
+    end
+  end
+
   refine Array do
     def each_utf8_encode
       map{|e| e.to_s.encode('utf-8')}
