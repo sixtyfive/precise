@@ -8,3 +8,4 @@ gemspec
 gem 'rake'
 gem 'minitest'
 gem 'standard'
+gem 'pry'
