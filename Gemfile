@@ -1,10 +1,10 @@
 source 'https://rubygems.org'
 
-ruby '>= 2.7'
+ruby "~> #{File.read('.ruby-version').strip}.0"
 
-# Specify your gem's dependencies in precise.gemspec
+# this gem's dependencies are specified in precise.gemspec
 gemspec
 
-gem 'rake', '~> 13.0'
-gem 'minitest', '~> 5.0'
-gem 'standard', '~> 1.3'
+gem 'rake'
+gem 'minitest'
+gem 'standard'

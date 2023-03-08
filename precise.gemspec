@@ -10,13 +10,13 @@ Gem::Specification.new do |spec|
 
   spec.summary = "..."
   spec.description = "..."
-  spec.homepage = "https://git.saw-leipzig.de/bibarab/misc/ba-precise"
-  spec.required_ruby_version = ">= 2.6.0"
+  spec.homepage = "https://rubygems.org/gems/precise"
+  spec.required_ruby_version = ">= 3.0.0"
 
   spec.metadata["allowed_push_host"] = "..."
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://git.saw-leipzig.de/bibarab/misc/ba-precise.git"
+  spec.metadata["source_code_uri"] = "https://github.com/sixtyfive/precise.git"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
@@ -31,5 +31,5 @@ Gem::Specification.new do |spec|
 
   # dependencies
 
-  spec.add_dependency "colorize", "~> 0.8"
+  spec.add_dependency "tiny_color", "~> 0.8"
 end

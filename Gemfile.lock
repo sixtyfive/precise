@@ -41,13 +41,13 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  minitest (~> 5.0)
+  minitest
   precise!
-  rake (~> 13.0)
-  standard (~> 1.3)
+  rake
+  standard
 
 RUBY VERSION
-   ruby 2.7.4p191
+   ruby 3.0.4p208
 
 BUNDLED WITH
    2.3.9
