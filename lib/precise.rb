@@ -1,6 +1,6 @@
-require 'colorize'
 require 'pp'
 require 'slop'
+require 'tiny_color'
 
 deps = %w[version debugging error_classes core_extensions transcription transcription_r2a transcription_a2r]
 deps.each{|d| require_relative File.join(__dir__,'..','lib','precise',d)}
