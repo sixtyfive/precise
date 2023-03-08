@@ -60,7 +60,7 @@ module Precise
       "و": ["ū", "w"],
       "ى": "á",
       "ي": ["ī", "y"],
-      "َ": "à",
+      "َ": "a",
       "ُ": "u",
       "ِ": "i",
       "پ": "p",
@@ -78,6 +78,7 @@ module Precise
       "٨": "8",
       "٩": "9",
     }.map{|k,v| [k.to_s, v]}.to_h
+    SHADDA=' ّ'.strip
 
     def transcribe(arabic)
       non_word_rgx = /([\s\d[:punct:]]+)/
@@ -91,28 +92,29 @@ module Precise
         (@out_chunks << '')
         chars.each.with_index do |ch,j|
           (skip-=1; next) if skip>0
-          (@out_chunks.last << A2R['ال']; skip+=1; next) if j==0 && word.match?(/^ال/)
+          (@out_chunks[-1] << A2R['ال']; skip+=1; next) if j==0 && word.match?(/^ال/)
           out_char = nil
           # و and ي:
           # first in array is a long vowel,
           # second in array is a consonant
           if A2R[ch].class==Array
             if j==0 || j+1==word.length
-              (@out_chunks.last << A2R[ch].last; next)
+              (@out_chunks[-1] << A2R[ch][-1]; next)
             else
-              out_char = A2R[ch].first
+              out_char = A2R[ch][0]
             end
           else
             out_char = A2R[ch]
           end
-          (@out_chunks.last << out_char; next) if out_char
+          (@out_chunks[-1] << A2R[chars[j-1]]) if ch == SHADDA
+          (@out_chunks[-1] << out_char; next) if out_char
         end
       end
     end
 
     def self.transcribe(arabic, opts={})
-      warn "Warning: Romanisation is experimental and incomplete!".yellow
-      warn "Especially consider adding short vowels by hand as needed.".yellow
+      warn "Romanisation is incomplete.".yellow
+      warn "Consider adding short vowels by hand as needed.".yellow
       obj = new(opts)
       obj.transcribe(arabic)
       return obj.transcription
