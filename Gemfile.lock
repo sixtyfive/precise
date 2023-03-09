@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    precise (0.1.2)
+    precise (0.1.4)
       slop
       tiny_color
 
@@ -59,4 +59,4 @@ DEPENDENCIES
   standard
 
 BUNDLED WITH
-   2.3.9
+   2.4.1

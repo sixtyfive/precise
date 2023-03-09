@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 
+require 'bundler'
+Bundler.require
+
 f = File.basename(__FILE__, '.rb')
 if __FILE__.match(/exe\/#{f}$/) 
   require_relative "../lib/#{f}"

@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'bundler'
+Bundler.require
+
 require 'bundler/gem_tasks'
 require 'rake/testtask'
 

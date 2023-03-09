@@ -1,6 +1,3 @@
-require 'bundler'
-Bundler.require
-
 require 'pp'
 require 'slop'
 require 'tiny_color'
