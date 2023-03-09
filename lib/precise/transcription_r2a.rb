@@ -148,12 +148,6 @@ module Precise
       }
     }
 
-    R2AReplacements = {
-      presumed_article_lat: /^\(al-\)/,
-      presumed_article_ara: '(ال)',
-      article_ara: 'ال'
-    }
-    
     PostR2AWordReplacements = {
       /^(.*)لّاه/ => '\1 الله', # names ending in "allah"
       /(ب\.|إبن|إِبن)/ => 'بن', # "son of"
@@ -311,14 +305,6 @@ module Precise
 
       puts "- (#{romanized.size}) [#{romanized}]".light_green if $dbg > 1
 
-      # deal with BA's addition of a prefix'd "(al-)"
-      rgx = R2AReplacements[:presumed_article_lat]
-      if romanized.match(rgx)
-        romanized = romanized.gsub(rgx, '')
-        if @opts[:guess_tareef]
-          arabic += R2AReplacements[:article_ara]
-        end
-      end
       # next, turn strings into character arrays
       romanized = romanized.chars
       arabic = arabic.chars
