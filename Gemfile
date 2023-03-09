@@ -1,10 +1,8 @@
 source 'https://rubygems.org'
 
-ruby "~> #{File.read('.ruby-version').strip}.0"
-
 # this gem's dependencies are specified in precise.gemspec
 gemspec
-
+# below are development dependencies only
 gem 'rake'
 gem 'minitest'
 gem 'standard'
