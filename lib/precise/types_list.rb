@@ -3,13 +3,15 @@ require 'fileutils'
 module Precise
   using CoreExtensions
 
-  class Corpora
+  class TypesList
+    @@types = nil 
+
     def initialize
       resdir = File.join __dir__,'..','..','res'
       FileUtils.mkdir_p resdir
       typesfile = File.absolute_path(File.join resdir,'types.lst')
       download(typesfile) unless File.exist? typesfile
-      @types = File.readlines typesfile, chomp: true
+      @types ||= File.readlines typesfile, chomp: true
     end
 
     def download(path)

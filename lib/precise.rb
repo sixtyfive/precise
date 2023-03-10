@@ -3,7 +3,7 @@ require 'slop'
 require 'yaml'
 require 'tiny_color'
 
-deps = %w[version debugging error_classes core_extensions transcription transcription_r2a transcription_a2r corpora]
+deps = %w[version debugging error_classes core_extensions transcription transcription_r2a transcription_a2r types_list]
 deps.each{|d| require_relative File.join(__dir__,'..','lib','precise',d)}
 
 module Precise
@@ -43,7 +43,7 @@ module Precise
         outstr = Precise::Transcription.transcribe(instr.dup, options)
       else
         outstr = Precise::Transcription.reverse(instr.dup, options)
-        outstr += " (#{Precise::Corpora::percentage_of_tokens_present(outstr)}%)" if @opts[:confidence]
+        outstr += " (#{Precise::TypesList::percentage_of_tokens_present(outstr)}%)" if @opts[:confidence]
       end
       puts outstr.pretty_inspect.gsub(/(^"|"$)/, "").strip
     end
