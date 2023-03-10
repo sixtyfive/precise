@@ -31,4 +31,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'slop'
   spec.add_dependency 'tiny_color'
+  spec.add_dependency 'progressbar'
 end
