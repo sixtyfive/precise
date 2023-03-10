@@ -1,8 +1,9 @@
 require 'pp'
 require 'slop'
+require 'yaml'
 require 'tiny_color'
 
-deps = %w[version debugging error_classes core_extensions transcription transcription_r2a transcription_a2r]
+deps = %w[version debugging error_classes core_extensions transcription transcription_r2a transcription_a2r corpora]
 deps.each{|d| require_relative File.join(__dir__,'..','lib','precise',d)}
 
 module Precise
@@ -12,6 +13,8 @@ module Precise
       opts.banner = "Usage: precise [options] <string(s)>\n"
       opts.separator "    where options can be:\n"
       alif_variants = Precise::Transcription::AlifVariants
+      opts.bool "-s", "--show-rules", "print the list of rules which are applied for transcription"
+      opts.bool "-c", "--confidence", "also print the percentage of output words appearing in a large corpus of Arabic"
       opts.bool "-A", "--no-alif-variants", "all of #{alif_variants.join("، ")} will be merged into ا"
       opts.bool "-T", "--no-tashkeel", "diacritics (and non printables, such as tatweel) will be removed from output"
       opts.bool "-P", "--no-punctuation", "all punctuation characters will be discarded from output"
@@ -21,12 +24,10 @@ module Precise
         "    At present, Arabic-to-Roman transcription is only rudimentary."
       opts = Slop::Parser.new(opts)
 
-      # TODO: add option to print the rules!
-      # TODO: write down the rules!
-
       begin
         @opts = opts.parse(ARGV)
         usage if @opts[:help] || ARGV.size == 0
+        rules if @opts.to_h[:show_rules]
       rescue
         @opts = opts.parse([])
         usage
@@ -42,12 +43,18 @@ module Precise
         outstr = Precise::Transcription.transcribe(instr.dup, options)
       else
         outstr = Precise::Transcription.reverse(instr.dup, options)
+        outstr += " (#{Precise::Corpora::percentage_of_tokens_present(outstr)}%)" if @opts[:confidence]
       end
       puts outstr.pretty_inspect.gsub(/(^"|"$)/, "").strip
     end
 
     def usage
       warn @opts
+      exit
+    end
+
+    def rules
+      puts Precise::Transcription::R2ATables.map{|k,v| Hash[k.to_s,v.map{|kk,vv| Hash[kk.to_s,vv]}]}.to_yaml.gsub(/---\n/,'')
       exit
     end
 
