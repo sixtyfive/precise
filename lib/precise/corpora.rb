@@ -1,10 +1,9 @@
-module Precise
+require 'fileutils'
 
-  using CoreExtensions # the more generic ones
+module Precise
+  using CoreExtensions
 
   class Corpora
-    using Precise::CoreExtensions
-
     def initialize
       resdir = File.join __dir__,'..','..','res'
       FileUtils.mkdir_p resdir
