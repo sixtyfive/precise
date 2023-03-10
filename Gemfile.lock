@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    precise (0.1.6)
+    precise (0.1.7)
       progressbar
       slop
       tiny_color
