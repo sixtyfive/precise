@@ -13,9 +13,9 @@ Romanise a string of Arabic (experimental):
 
     $ precise 'بسم  الله الرحمن الرحيم' # (not able to infer Tashkeel!)
 
-## Usage inside of another application
+## As a library
 
-Install the gem and add to the application's Gemfile by executing:
+Install the gem and add to your Gemfile by executing:
 
     $ bundle add precise
     $ bundle install
