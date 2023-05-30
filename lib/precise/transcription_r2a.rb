@@ -149,7 +149,8 @@ module Precise
     }
 
     PostR2AWordReplacements = {
-      /^(.*)لّاه/ => '\1 الله', # names ending in "allah"
+      /^(.*[^أ])َلّاه/ => '\1 الله', # names ending in "allah"
+      /أَلّاه(\s|$)/ => 'الله\1', # Allah
       /(ب\.|إبن|إِبن)/ => 'بن', # "son of"
       /أَبي/ => 'أبي', # "father of" (gen.)
       /أَبو/ => 'أبو', # "father of" (nom.)
@@ -163,6 +164,7 @@ module Precise
     PostR2AContextReplacements = {
       /((^|\.\s+)بن(\s+))/ => 'ابن\3', # exception: son-of in beginning of sentence
       /(تِ|تُ|تَ)(\s+)/ => 'ة ', # this'll lose the case ending, but that's for the better
+      /(ييَ|يَّ)(\s+|$)/ => 'يَّة\2', # nisba
       /داوود/ => 'داود' # not sure if this might actually hold true for all ...wū...?
     }
 
@@ -332,7 +334,13 @@ module Precise
         # deal with alif madda before "normal" hamza rules follow
         if ("#{ch}#{fch}".match?(/ʾā/) || "#{pch}#{ch}".match?(/^Ā/))
           (dbg "\talif madda #{R2A['ʾā']}"; arabic << R2A['ʾā']; skip=true; next); end
-
+        
+        if pch.nil? || pch.match(/\s+/) 
+          first_letter_of_word_upcase = (ch.dup.upcase == ch); end
+        
+        if (fch.nil? || fch.match(/\s+/)) && ch == 'a' && first_letter_of_word_upcase
+          ch = '-a'; end
+        
         # hamza followed by a short or long vowel
         if ch == 'ʾ' && %w[a i u ā ī ū].include?(fch.to_s.downcase)
           is_first_letter_of_word = (pch.nil? || pch.match(/\s+/))
