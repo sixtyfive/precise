@@ -95,6 +95,18 @@ module Precise
         aw:    :َو,
         ay:    :َي
       },
+      numbers: {
+        '1':  :١,
+        '2':  :٢,
+        '3':  :٣,
+        '4':  :٤,
+        '5':  :٥,
+        '6':  :٦,
+        '7':  :٧,
+        '8':  :٨,
+        '9':  :٩,
+        '0':  :٠
+      },
       brockelmann: {
         '-a':  :ة,  # "-" = at word-end
         '-at': :ة,  # "-" = at word-end
@@ -136,7 +148,7 @@ module Precise
         x:    :كس
       },
       semitic: {
-        ē:    :ﺍ # is that always so?
+        ē:    :ا # is that always so?
       },
       finnic: {
         ä:    Fatha # in e.g. Mänglī
@@ -148,9 +160,18 @@ module Precise
       }
     }
 
-    PostR2AWordReplacements = {
-      /^(.*[^أ])َلّاه/ => '\1 الله', # names ending in "allah"
-      /أَلّاه(\s|$)/ => 'الله\1', # Allah
+    FullWordReplacements = {
+      'allāh': 'الله',
+      'addīn': 'الدين',
+      'lillāh': 'لله',
+      'li-llāh': 'لله',
+      'ilāha': 'إله',
+      'al-raḥmān': 'الرحمن',
+      ',': '،'
+    }
+
+    PostR2AWordReplacements = 
+    {
       /(ب\.|إبن|إِبن)/ => 'بن', # "son of"
       /أَبي/ => 'أبي', # "father of" (gen.)
       /أَبو/ => 'أبو', # "father of" (nom.)
@@ -163,8 +184,6 @@ module Precise
 
     PostR2AContextReplacements = {
       /((^|\.\s+)بن(\s+))/ => 'ابن\3', # exception: son-of in beginning of sentence
-      /(تِ|تُ|تَ)(\s+)/ => 'ة ', # this'll lose the case ending, but that's for the better
-      /(ييَ|يَّ)(\s+|$)/ => 'يَّة\2', # nisba
       /داوود/ => 'داود' # not sure if this might actually hold true for all ...wū...?
     }
 
@@ -201,39 +220,36 @@ module Precise
       end
     end
 
-    def hamza_before_following(ch, pch, first_letter_of_word = false)
+    def hamza_before_following(ch, pch, fch, first_letter_of_word = false)
       if first_letter_of_word
         case ch.to_sym
           when :a, :u then AlifHamzaAbove
           when :i then AlifHamzaBelow
-          when :ā then AlifMadda
           when :ī then "#{YaHamzaAbove}#{R2A[ch]}"
           when :ū then "#{WawHamzaAbove}#{R2A[ch]}"
         end
       else
-        if %w[y ī].include? pch
-          # also take into account what PRECEDED the hamza - that might take precedence!
-          case ch.to_sym
-            when :a then YaHamzaAbove
-            when :i then YaHamzaAbove
-            when :u then WawHamzaAbove
-            when :ī then "#{YaHamzaAbove}#{R2A[ch]}"
-            when :ū then "#{WawHamzaAbove}#{R2A[ch]}"
-          end
-        else
-          case ch.to_sym
-            when :a then AlifHamzaAbove
-            when :i then YaHamzaAbove
-            when :u then
-              pch == 'ū' ? R2A['ʾ'] : WawHamzaAbove
-            when :ī then "#{YaHamzaAbove}#{R2A[ch]}"
-            when :ū then "#{WawHamzaAbove}#{R2A[ch]}"
-          end
+        case ch.to_sym
+          when :a then
+            if fch == 'ī'
+              YaHamzaAbove
+            elsif pch == 'ā' 
+              R2A['ʾ'] 
+            elsif pch == 'y' || pch == 'ī'
+              YaHamzaAbove
+            else
+              WawHamzaAbove
+            end
+          when :i then YaHamzaAbove
+          when :u then
+            pch == 'ū' ? R2A['ʾ'] : WawHamzaAbove
+          when :ī then "#{YaHamzaAbove}#{R2A[ch]}"
+          when :ū then "#{WawHamzaAbove}#{R2A[ch]}"
         end
       end
     end
 
-    def hamza_after_preceding(ch, first_letter_of_word = false)
+    def hamza_after_preceding(ch, ffch, first_letter_of_word = false)
       if first_letter_of_word
         case ch.to_sym
           when :a then AlifHamzaAbove
@@ -242,10 +258,18 @@ module Precise
         end
       else
         case ch.to_sym
-          when :a then AlifHamzaAbove
+          when :a then
+            if ffch == 'ū'
+              WawHamzaAbove
+            elsif ffch == 'ī'
+              YaHamzaAbove
+            else
+              AlifHamzaAbove
+            end
+          when :y then YaHamzaAbove
           when :i then YaHamzaAbove
           when :u then WawHamzaAbove
-          when :ī then YaHamzaAbove
+          when :w then WawHamzaAbove
         end
       end
     end
@@ -287,140 +311,203 @@ module Precise
 
     def sanitize(str)
       # remove nonprintables such as the ZWNJ
-      # FIXME: the erroneous_chars replacement table should have already taken care of this?!
+      # FIXME: the erroneous_chars replacement table should have already taken care of this?! No, because it looked before and behind itself
       ["\u200c", "\u200f"].each{|ch| str.gsub! ch, ''}
-      # make letters following either ʿ or ʾ lowercase
-      lastc=''; str.chars.map{|c| c.downcase! if lastc.match?(/[ʿʾ]/); lastc=c}.join
+      str
     end
 
+    def sanitize_word(str)
+      str.gsub!(/^Al\-/,'al-')
+      # make letters following either ʿ or ʾ lowercase
+      out = str.chars.map.with_index{|c,i| 
+        if i > 0 && str.chars[i-1].match?(/[ʿʾ]/)
+          c.downcase
+        else
+          c
+        end
+      }.join
+      return out
+    end
+    
     # input: valid Precise string
     #   example: (al-)ʿAbbādī Muḥammad Ibn Aḥmad Ibn Muḥammad al-Harawī
     # output: Arabic string
     #   example: العَبّادي مُحَمَّد بن أَحمَد بن مُحَمَّد الهَرَوي
     def reverse(romanized)
       raise Precise::NotATranscriptionError if romanized.nil?
-
+      
       # sure, it's called "Precise", but it should still be 
       # as tolerant as possible in what it accepts as input...
       romanized = sanitize(romanized)
-      arabic = '' # we start with an empty string and go character by character
+      arabic = [] # we start with an empty array and go character by character
 
       puts "- (#{romanized.size}) [#{romanized}]".light_green if $dbg > 1
-
-      # next, turn strings into character arrays
-      romanized = romanized.chars
-      arabic = arabic.chars
-      # to be able to merge 2 romanized characters into 1 arabic character
-      skip = false
+      words = romanized.split(/([\s\,\(]|addīn|allāh)/)
       # print string like so: ʿ·A·b·b·ā·d·ī· ·M·u·ḥ·a·m·m·a·d· ·I·b·n· ·A·ḥ·m·a·d· ·I·b·n· ...
-      puts "- (#{romanized.size}) [#{romanized.join('·')}]".light_green if $dbg > 1
-
-      # loop over the romanized character array, filling the arabic one up as we go
-      romanized.each_with_index do |ch,i|
-        # a little bit of context
-         pch = i == 0 ? nil : romanized[i-1]
-         fch = romanized[i+1]
-        ffch = romanized[i+2]
-
-        # multi-letter skip-aheads
-        if skip
-          dbg "\t\tskipping #{ch}"
-          if !(pch=='a' && fch=='-') # we're in the middle of "al-" (word-start)
-            skip=false; end; next; end
-
-        # symbols to remove from input
-        (dbg "\tskipping unprintable symbol"; next) if [ZWNJ].include?(ch)
-
-        # deal with alif madda before "normal" hamza rules follow
-        if ("#{ch}#{fch}".match?(/ʾā/) || "#{pch}#{ch}".match?(/^Ā/))
-          (dbg "\talif madda #{R2A['ʾā']}"; arabic << R2A['ʾā']; skip=true; next); end
-        
-        if pch.nil? || pch.match(/\s+/) 
-          first_letter_of_word_upcase = (ch.dup.upcase == ch); end
-        
-        if (fch.nil? || fch.match(/\s+/)) && ch == 'a' && first_letter_of_word_upcase
-          ch = '-a'; end
-        
-        # hamza followed by a short or long vowel
-        if ch == 'ʾ' && %w[a i u ā ī ū].include?(fch.to_s.downcase)
-          is_first_letter_of_word = (pch.nil? || pch.match(/\s+/))
-          (dbg "\t#{ch} with following #{fch}";
-           arabic << hamza_before_following(fch, pch, is_first_letter_of_word);
-           skip=true unless this_word(romanized.join, i).match?(/(a$|at($|\s))/)
-           next); end
-        # hamza preceded by a short vowel
-        # (beware of a possible alif madda (would be dealt with above, on the next round))
-        if fch.to_s == 'ʾ' && !ffch.to_s.match?(/[āĀ]/) && %w[a i u].include?(ch.downcase)
-          is_first_letter_of_word = (pch.nil? || pch.match(/\s+/))
-          (dbg "\t#{fch} carried on or following preceding #{ch}"
-           arabic << hamza_after_preceding(ch, is_first_letter_of_word); skip=true; next); end
-
-        # find the article "al", marked by having a dash appended to it
-        (dbg "\tarticle al- #{R2A['al-']}"; arabic << R2A['al-']; skip=true; next) if ("#{ch}#{fch}#{ffch}" == 'al-')
-
-        # unconditionally add spaces, dots and dashes to the output
-        (dbg "\tinitial only (#{pch}#{ch})"; arabic << ch; next) if ch=='.' && (fch.nil? || fch.match(/\s+/))
-        (dbg "\tnon-letter (#{ch})"; arabic << ch; next) if ch.match(PunctSepRgx) # white space or punctuation
-
-        # a word-initial "a" or "u" must always be preceded by "ʾ"; only "i" can possibly *not* have one
-
-        # deal with word-initial special cases
-        if pch.to_s.strip.empty? # either beginning of string or of word
-          if %w[a u].include?(ch)  
-            (dbg "\tprepending #{ch} with hamza"; arabic << R2A[ch.upcase]; next); end
-          if ch == 'i'
-            (dbg "\thamza-less alif?"
-             context = this_word(romanized.join, i)
-             arabic << alif_for_word_initial_kasra(context.split(/^w?al-/).last)
-             next); end; end
-
-        # perform tashdeed
-        (out=R2A[ch]+Shadda; dbg "\ttashdeed of #{ch} #{out}"; arabic << out; skip = true; next) if R2A[ch] && ch==fch
-
-        # should there be a ta'marbouta or not at the end of the word?
-        context1 = this_word(romanized.join,i)
-        context2 = this_word_and_the_next(romanized.join,i)
-        if context1 == context2 # single word
-          if (i == context1.length-2 && "#{ch}#{fch}".match?(/at$/)) \
-             || (i == context1.length-1 && "#{ch}#{fch}".match?(/a$/))
-             arabic << R2A['-at']+' '; skip=true; next
-          end
-        else # multiple words
-          if (i == context1.length-2 && "#{ch}#{fch}#{ffch}".match?(/at\s/))
-            arabic << R2A['-a']+' '; skip = true; next
-          elsif (i == context1.length-1 && "#{ch}#{fch}".match?(/a\s/))
-            arabic << R2A['-a']+' '; next
-          end
+      puts "- (#{words.size}) [#{words.join('·')}]".light_green if $dbg > 1
+      words.each_with_index do |word,word_index|
+        first_letter_of_word_upcase = true if word.match?(/^[ʾʿ][AIU]/) 
+        sanitized_word = sanitize_word(word)
+        downcaseword = sanitized_word.dup.downcase.to_sym
+        if FullWordReplacements.keys.include?(downcaseword)
+          arabic << ' ' if word_index > 0 && !words[word_index-1].match?(/^\s\($/)
+          FullWordReplacements[downcaseword].chars{ |char| arabic << char}
+          next
         end
+        # neixt, turn word strings into character arrays
+        roman_chars = sanitized_word.chars
+        wordlength = roman_chars.length
+        context = sanitized_word.dup
+        first_letter_of_word = roman_chars[0]
+        start_index = 0
+        end_index = wordlength-1
+        article = false
+        no_ta_marbouta = false
+        # to be able to merge 2 romanized characters into 1 arabic character
+        skip = false
+        # loop over the romanized character array, filling the arabic one up as we go
+        roman_chars.each_with_index do |ch,i|
+          # a little bit of context
+          ppch = i < 2 ? nil : roman_chars[i-2]
+          pch = i == 0 ? nil : roman_chars[i-1]
+          fch = roman_chars[i+1]
+          ffch = roman_chars[i+2]
+   
+          # symbols to remove from input
+          (dbg "\tskipping unprintable symbol"; next) if [ZWNJ].include?(ch)
+          
+          is_first_letter_of_word = (i==start_index)
+          is_last_letter_of_word = (i==end_index)
+          #context2 is not needed at the moment
+          #context2 = this_word_and_the_next(romanized.join,i)
+          #if the word starts with brackets
+          if context.start_with?('al-')||context.start_with?('wal-')||context.start_with?('lil-')
+            (article = true; context.gsub!(/^[wl]?[ai]l\-\)?/,''); start_index = sanitized_word.scan(context).map{ |scan| $~.offset(0)[0] }[0]); end
+            
+          if context.start_with?('bil-') && i == 1
+            (article = true; context.gsub!(/^bil\-\)?/,''); start_index = sanitized_word.scan(context).map{ |scan| $~.offset(0)[0] }[0]; arabic << R2A['al-']; skip=true; next); end
+          
+          if context.start_with?('wa-')||context.start_with?('li-')||context.start_with?('bi-')
+            (context.gsub!(/^.{2}\-/,''); start_index = sanitized_word.scan(context).map{ |scan| $~.offset(0)[0] }[0]); end
 
-        # letter ayn followed by uppercase vowel
-        if ch == 'ʿ'
-          (skip=true; ar=R2A[ch]) if %w[A I U].include?(fch)
-          case fch # ayn+following vowel at beginning of word
-            when 'A' then ar+=Fatha
-            when 'I' then ar+=Kasra
-            when 'U' then ar+=Damma; end; end
-        (dbg "\tayn+vowel #{ch}#{fch} #{ar}"; arabic << ar; next) if ar && ar.size==2
+          if context.end_with?('.')||context.end_with?(')')
+            (end_index = wordlength-2; context.gsub!(/\.\)$/,'')); end
 
-        # long "a" at word-end: alif maqsoorah, otherwise normal alif
-        # "e" at word-end: letter hah, otherwise just a fatha
-        if R2A[ch].class == Array
-          choice = (fch.nil? || fch==' ') ? R2A[ch].first : R2A[ch].last
-          (dbg "\tcontextual #{ch} #{choice}"; arabic << choice; next); end
+          if context.match?(/aʾat?$/) || context.match?(/^.āʾat?$/)
+            no_ta_marbouta = true; end
+          # multi-letter skip-aheads
+          if skip
+            dbg "\t\tskipping #{ch}"
+            if !(pch=='a' && fch=='-') # we're in the middle of "al-" (word-start)
+              skip=false; end; next; end
+          
+          if context.end_with?('llāh')
+            if i+3 == end_index
+              arabic << R2A['ā']+R2A['l']+R2A['l']
+              skip = true
+              next
+            elsif i+1 == end_index
+              next
+            end
+          end
+          
+          #find the article "al", marked by having a dash appended to it
+          (dbg "\tarticle al- #{R2A['al-']}"; arabic << R2A['al-']; skip=true; next) if ("#{ch}#{fch}#{ffch}" == 'al-')
 
-        # exact match (pure transliteration, no transcription effort required)
-        (dbg "\tfrom table #{ch}→#{R2A[ch]}"; arabic << R2A[ch]; next) if R2A[ch]
+          # deal with word-initial special cases
+          if is_first_letter_of_word # beginning of string or of word
+            if ch == 'a'
+              if context.end_with?('ī')
+                arabic << Alif
+                next
+              else
+                dbg "\tprepending #{ch} with hamza"
+                arabic << R2A['A']
+                next 
+              end
+            elsif ch.dup.downcase == 'ā'
+              dbg "\talif madda #{R2A['ʾā']}"
+              arabic << R2A['ʾā']
+              next
+            elsif ch == 'u'
+              arabic << R2A['U']
+            elsif ch == 'i'
+              dbg "\thamza-less alif?"
+              arabic << alif_for_word_initial_kasra(context)
+              next
+            elsif ch.dup.downcase == "ī"
+              arabic << R2A['I']
+              arabic << R2A[ch.downcase]
+              next
+            elsif ch.dup.downcase == 'ū'
+              arabic << R2A['A']
+              arabic << R2A[ch.downcase]
+              next
+            end
+          end
+          # deal with alif madda before "normal" hamza rules follow
+          if "#{ch}#{fch}" == "ʾā"
+            dbg "\talif madda #{R2A['ʾā']}"
+            arabic << R2A['ʾā']
+            skip=true
+            next
+          end
+          
+          # hamza followed by a short or long vowel
+          if ch == 'ʾ' && %w[a i u ī ū].include?(fch)
+            (dbg "\t#{ch} with following #{fch}";
+             arabic << hamza_before_following(fch, pch, ffch, is_first_letter_of_word);
+             skip=true unless context.match?(/at?$/);
+             next); end
+          # hamza preceded by a short vowel
+          # (beware of a possible alif madda (would be dealt with above, on the next round))
+          if fch.to_s == 'ʾ' && (%w[i u y w].include?(ch)||(ch == 'a' && ffch != 'ā'))
+            (dbg "\t#{fch} carried on or following preceding #{ch}"
+            arabic << hamza_after_preceding(ch, ffch, is_first_letter_of_word); skip=true; next); end
+         
+          # unconditionally add spaces, dots and dashes to the output
+          (dbg "\tinitial only (#{pch}#{ch})"; arabic << ch; next) if ch=='.' && (fch.nil? || fch.match(/\s+/))
+          (dbg "\tnon-letter (#{ch})"; arabic << ch; next) if ch.match(PunctSepRgx) # white space or punctuation 
 
-        # no luck yet; might be a regular uppercase letter
-        (dbg "\tuppercased #{ch} #{R2A[ch.downcase]}"; arabic << R2A[ch.downcase]; next) if R2A[ch.downcase]
+          #now look again at first letter of word
+          if context.match?(/^[ʾʿ]/)
+            start_index = sanitized_word.scan(context).map{ |scan| $~.offset(0)[0] }[0]
+          end
+        
+          first_letter_of_word = ch.dup if is_first_letter_of_word
+          first_letter_of_word_upcase = (first_letter_of_word == first_letter_of_word.dup.upcase) unless first_letter_of_word_upcase
+          # a word-initial "a" or "u" must always be preceded by "ʾ"; only "i" can possibly *not* have one 
+          # perform tashdeed
+          
+          (out=R2A[ch]+Shadda; dbg "\ttashdeed of #{ch} #{out}"; arabic << out; skip = true; next) if R2A[ch] && R2A[ch].class == String && ch==fch
+          # should there be a ta'marbouta or not at the end of the word?
+          if ch == 'a' && (first_letter_of_word_upcase||article||context.end_with?('iyya')||context.end_with?('īya')||(pch == 'ʾ' && !no_ta_marbouta ))
+            if is_last_letter_of_word
+              arabic << R2A['-a']+' '; next
+            elsif i == wordlength-2 && fch == 't'
+              arabic << R2A['-a']; skip=true; next
+            end
+          end
+          # long "a" at word-end: alif maqsoorah, otherwise normal alif
+          # "e" at word-end: letter hah, otherwise just a fatha
+          if R2A[ch].class == Array
+            choice = (fch.nil? || fch==' ') ? R2A[ch].first : R2A[ch].last
+            (dbg "\tcontextual #{ch} #{choice}"; arabic << choice; next); end
 
-        # still no luck; last shot is punctuation
-        (dbg "\tinterpunctuation #{ch}"; arabic << ch; next) if ch.match?(/[[:punct:]]/)
+          # exact match (pure transliteration, no transcription effort required)
+          (dbg "\tfrom table #{ch}→#{R2A[ch]}"; arabic << R2A[ch]; next) if R2A[ch]
 
-        # mark unknown characters as such; the philosophy here being that input to
-        # Precise should be pre-processed enough for this to never have to happen…
-        warn "Warning: character '#{ch}' is unknown to Precise and will be substituted by placeholder only".yellow
-        arabic << '�'
+          # no luck yet; might be a regular uppercase letter
+          (dbg "\tuppercased #{ch} #{R2A[ch.downcase]}"; arabic << R2A[ch.downcase]; next) if R2A[ch.downcase]
+
+          # still no luck; last shot is punctuation
+          (dbg "\tinterpunctuation #{ch}"; arabic << ch; next) if ch.match?(/[[:punct:]]/)
+
+          # mark unknown characters as such; the philosophy here being that input to
+          # Precise should be pre-processed enough for this to never have to happen…
+          warn "Warning: character '#{ch}' is unknown to Precise and will be substituted by placeholder only".yellow
+          arabic << '�'
+        end
       end
 
       # character-array to word-array
